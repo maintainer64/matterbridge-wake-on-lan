@@ -46,3 +46,4 @@ temp/
 jest/
 matterstorage/
 matterstorage.backup/
+.idea/

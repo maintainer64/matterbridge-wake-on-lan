@@ -1,23 +1,19 @@
 {
-  "name": "matterbridge-example-dynamic-platform",
-  "version": "1.2.4",
-  "description": "Matterbridge dynamic plugin",
-  "author": "https://github.com/Luligu",
+  "name": "matterbridge-wake-on-lan",
+  "version": "1.0.0",
+  "description": "Matterbridge wake on lan plugin",
+  "author": "https://github.com/maintainer64",
   "license": "MIT",
-  "homepage": "https://www.npmjs.com/package/matterbridge-example-dynamic-platform",
+  "homepage": "https://www.npmjs.com/package/matterbridge-wake-on-lan",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Luligu/matterbridge-example-dynamic-platform.git"
+    "url": "git+https://github.com/maintainer64/matterbridge-wake-on-lan"
   },
   "bugs": {
-    "url": "https://github.com/Luligu/matterbridge-example-dynamic-platform/issues"
-  },
-  "funding": {
-    "type": "buymeacoffee",
-    "url": "https://www.buymeacoffee.com/luligugithub"
+    "url": "https://github.com/maintainer64/matterbridge-wake-on-lan/issues"
   },
   "keywords": [
     "matterbridge",
@@ -28,6 +24,8 @@
     "plugin",
     "dynamic",
     "platform",
+    "wol",
+    "wake on lan",
     "virtual device",
     "virtual devices"
   ],
@@ -83,6 +81,8 @@
     "@eslint/js": "9.28.0",
     "@types/jest": "29.5.14",
     "@types/node": "24.0.0",
+    "@types/ping": "^0.4.4",
+    "@types/wake_on_lan": "^0.0.33",
     "eslint-config-prettier": "10.1.5",
     "eslint-plugin-jest": "28.13.3",
     "eslint-plugin-n": "17.19.0",
@@ -95,6 +95,8 @@
   },
   "dependencies": {
     "node-ansi-logger": "3.0.1",
-    "node-persist-manager": "1.0.8"
+    "node-persist-manager": "1.0.8",
+    "ping": "^0.4.4",
+    "wake_on_lan": "^1.0.0"
   }
 }
