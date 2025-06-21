@@ -1,6 +1,6 @@
 import { Matterbridge, PlatformConfig } from 'matterbridge';
 import { AnsiLogger } from 'matterbridge/logger';
-import { ExampleMatterbridgeDynamicPlatform } from './platform.js';
+import { MatterbridgeWakOnLan } from './platform.js';
 
 /**
  * This is the standard interface for Matterbridge plugins.
@@ -9,8 +9,8 @@ import { ExampleMatterbridgeDynamicPlatform } from './platform.js';
  * @param {Matterbridge} matterbridge - The Matterbridge instance.
  * @param {AnsiLogger} log - The logger instance.
  * @param {PlatformConfig} config - The platform configuration.
- * @returns {ExampleMatterbridgeDynamicPlatform} The initialized platform.
+ * @returns {MatterbridgeWakOnLan} The initialized platform.
  */
-export default function initializePlugin(matterbridge: Matterbridge, log: AnsiLogger, config: PlatformConfig): ExampleMatterbridgeDynamicPlatform {
-  return new ExampleMatterbridgeDynamicPlatform(matterbridge, log, config);
+export default function initializePlugin(matterbridge: Matterbridge, log: AnsiLogger, config: PlatformConfig): MatterbridgeWakOnLan {
+  return new MatterbridgeWakOnLan(matterbridge, log, config);
 }

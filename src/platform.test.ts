@@ -22,7 +22,7 @@ import {
   WindowCoveringCluster,
 } from 'matterbridge/matter/clusters';
 
-import { ExampleMatterbridgeDynamicPlatform } from './platform';
+import { MatterbridgeWakOnLan } from './platform';
 import { rmSync } from 'node:fs';
 
 let loggerLogSpy: jest.SpiedFunction<typeof AnsiLogger.prototype.log>;
@@ -61,7 +61,7 @@ describe('TestPlatform', () => {
   let server: ServerNode<ServerNode.RootEndpoint>;
   let aggregator: Endpoint<AggregatorEndpoint>;
   let device: MatterbridgeEndpoint;
-  let dynamicPlatform: ExampleMatterbridgeDynamicPlatform;
+  let dynamicPlatform: MatterbridgeWakOnLan;
 
   const mockLog = {
     fatal: jest.fn((message: string, ...parameters: any[]) => {
@@ -88,7 +88,12 @@ describe('TestPlatform', () => {
     homeDirectory: 'jest',
     matterbridgeDirectory: path.join('jest', '.matterbridge'),
     matterbridgePluginDirectory: path.join('jest', 'Matterbridge'),
-    systemInformation: { ipv4Address: undefined, ipv6Address: undefined, osRelease: 'xx.xx.xx.xx.xx.xx', nodeVersion: '22.1.10' },
+    systemInformation: {
+      ipv4Address: undefined,
+      ipv6Address: undefined,
+      osRelease: 'xx.xx.xx.xx.xx.xx',
+      nodeVersion: '22.1.10',
+    },
     matterbridgeVersion: '3.0.5',
     enableRVC: true,
     log: mockLog,
@@ -114,11 +119,26 @@ describe('TestPlatform', () => {
   } as unknown as Matterbridge;
 
   const mockConfig = {
-    name: 'matterbridge-example-dynamic-platform',
+    name: 'matterbridge-wake-on-lan',
     type: 'DynamicPlatform',
     whiteList: [],
     blackList: [],
-    useInterval: true,
+    wakeOnLan: [
+      {
+        id: '0x0001',
+        name: '1',
+        mac: '0a:d7:b2:97:42:f7',
+        address: '24.51.207.6',
+        port: '10',
+      },
+      {
+        id: '0x0002',
+        name: '2',
+        mac: '0a:d7:b2:97:42:f7',
+        address: '24.51.207.6',
+        port: '10',
+      },
+    ],
     enableConcentrationMeasurements: true,
     enableRVC: true,
     debug: true,
@@ -131,7 +151,11 @@ describe('TestPlatform', () => {
     matterbridge.matterbridgeDirectory = path.join('jest', '.matterbridge');
     matterbridge.matterbridgePluginDirectory = path.join('jest', 'Matterbridge');
 
-    matterbridge.log = new AnsiLogger({ logName: 'Matterbridge', logTimestampFormat: TimestampFormat.TIME_MILLIS, logLevel: LogLevel.DEBUG });
+    matterbridge.log = new AnsiLogger({
+      logName: 'Matterbridge',
+      logTimestampFormat: TimestampFormat.TIME_MILLIS,
+      logLevel: LogLevel.DEBUG,
+    });
 
     // Setup matter environment
     matterbridge.environment.vars.set('log.level', Level.NOTICE);
@@ -181,21 +205,21 @@ describe('TestPlatform', () => {
 
   it('should add a device to the aggregator to the server', async () => {
     device = new MatterbridgeEndpoint([onOffSwitch, bridgedNode, powerSource], { uniqueStorageKey: 'Device' }, true);
-    device.createDefaultBridgedDeviceBasicInformationClusterServer('Switch', '0x23452164', 0xfff1, 'Matterbridge', 'Matterbridge Switch');
+    device.createDefaultBridgedDeviceBasicInformationClusterServer('Switch', '0x0001', 0xfff1, 'Matterbridge', 'Matterbridge Switch');
     device.addRequiredClusterServers();
     expect(await aggregator.add(device)).toBeDefined();
   });
 
   it('should throw error in load when version is not valid', () => {
     mockMatterbridge.matterbridgeVersion = '1.5.0';
-    expect(() => new ExampleMatterbridgeDynamicPlatform(mockMatterbridge, mockLog, mockConfig)).toThrow(
+    expect(() => new MatterbridgeWakOnLan(mockMatterbridge, mockLog, mockConfig)).toThrow(
       'This plugin requires Matterbridge version >= "3.0.6". Please update Matterbridge from 1.5.0 to the latest version in the frontend.',
     );
     mockMatterbridge.matterbridgeVersion = '3.0.6';
   });
 
   it('should initialize platform with config name', () => {
-    dynamicPlatform = new ExampleMatterbridgeDynamicPlatform(mockMatterbridge, mockLog, mockConfig);
+    dynamicPlatform = new MatterbridgeWakOnLan(mockMatterbridge, mockLog, mockConfig);
     dynamicPlatform.version = '1.6.6';
     expect(mockLog.info).toHaveBeenCalledWith('Initializing platform:', mockConfig.name);
   });
@@ -220,103 +244,12 @@ describe('TestPlatform', () => {
     mockConfig.blackList = [];
     await dynamicPlatform.onStart('Test reason');
     expect(mockLog.info).toHaveBeenCalledWith('onStart called with reason:', 'Test reason');
-    expect(mockMatterbridge.addBridgedEndpoint).toHaveBeenCalledTimes(41);
+    expect(mockMatterbridge.addBridgedEndpoint).toHaveBeenCalledTimes(2);
   }, 60000);
 
   it('should start the server', async () => {
     await (matterbridge as any).startServerNode(server);
     expect(server.lifecycle.isOnline).toBe(true);
-  });
-
-  it('should execute the commandHandlers', async () => {
-    // Invoke command handlers
-    for (const [key, device] of Array.from(dynamicPlatform.bridgedDevices)) {
-      expect(device).toBeDefined();
-
-      if (device.hasClusterServer(IdentifyCluster)) {
-        jest.clearAllMocks();
-        await device.executeCommandHandler('identify', { identifyTime: 5 });
-        await device.executeCommandHandler('triggerEffect', { effectIdentifier: 0, effectVariant: 0 });
-      }
-
-      if (device.hasClusterServer(OnOffCluster)) {
-        await device.executeCommandHandler('on');
-        await device.executeCommandHandler('off');
-        await device.executeCommandHandler('toggle');
-      }
-
-      if (device.hasClusterServer(ModeSelectCluster)) {
-        await device.executeCommandHandler('changeToMode', { mode: 1 });
-      }
-
-      if (device.hasClusterServer(LevelControlCluster)) {
-        await device.executeCommandHandler('moveToLevel', { level: 1 });
-        await device.executeCommandHandler('moveToLevelWithOnOff', { level: 1 });
-      }
-
-      if (device.hasClusterServer(ColorControlCluster)) {
-        await device.executeCommandHandler('moveToColor', { hue: 50, saturation: 100, colorX: 0.5, colorY: 0.5, colorTemperatureMireds: 300 });
-        await device.executeCommandHandler('moveToHue', { hue: 50, saturation: 100, colorX: 0.5, colorY: 0.5, colorTemperatureMireds: 300 });
-        await device.executeCommandHandler('moveToSaturation', { hue: 50, saturation: 100, colorX: 0.5, colorY: 0.5, colorTemperatureMireds: 300 });
-        await device.executeCommandHandler('moveToHueAndSaturation', { hue: 50, saturation: 100, colorX: 0.5, colorY: 0.5, colorTemperatureMireds: 300 });
-        await device.executeCommandHandler('moveToColorTemperature', { hue: 50, saturation: 100, colorX: 0.5, colorY: 0.5, colorTemperatureMireds: 300 });
-      }
-
-      if (device.hasClusterServer(WindowCoveringCluster.with(WindowCovering.Feature.Lift, WindowCovering.Feature.PositionAwareLift))) {
-        await device.executeCommandHandler('upOrOpen');
-        await device.executeCommandHandler('downOrClose');
-        await device.executeCommandHandler('stopMotion');
-        await device.executeCommandHandler('goToLiftPercentage', { liftPercent100thsValue: 5000 });
-        if (device.deviceName === 'Cover lift and tilt') {
-          await device.executeCommandHandler('goToTiltPercentage', { tiltPercent100thsValue: 5000 });
-        }
-      }
-
-      if (device.hasClusterServer(DoorLockCluster)) {
-        await device.executeCommandHandler('lockDoor');
-        await device.executeCommandHandler('unlockDoor');
-      }
-
-      if (device.hasClusterServer(FanControlCluster)) {
-        await device.executeCommandHandler('step', { direction: FanControl.StepDirection.Increase });
-        await device.setAttribute(FanControlCluster.id, 'fanMode', FanControl.FanMode.Off);
-        await device.setAttribute(FanControlCluster.id, 'fanMode', FanControl.FanMode.Low);
-        await device.setAttribute(FanControlCluster.id, 'fanMode', FanControl.FanMode.Medium);
-        await device.setAttribute(FanControlCluster.id, 'fanMode', FanControl.FanMode.High);
-        await device.setAttribute(FanControlCluster.id, 'fanMode', FanControl.FanMode.On);
-        if (device.deviceName === 'Fan') {
-          await device.setAttribute(FanControlCluster.id, 'fanMode', FanControl.FanMode.Auto);
-        }
-
-        await device.setAttribute(FanControlCluster.id, 'percentSetting', 50);
-        await device.setAttribute(FanControlCluster.id, 'percentSetting', 10);
-        if (device.deviceName === 'Fan') {
-          // await device.setAttribute(FanControlCluster.id, 'speedSetting', 50);
-          // await device.setAttribute(FanControlCluster.id, 'speedSetting', 10);
-        }
-      }
-
-      if (device.hasClusterServer(ThermostatCluster.with(Thermostat.Feature.Heating, Thermostat.Feature.Cooling, Thermostat.Feature.AutoMode))) {
-        await device.executeCommandHandler('setpointRaiseLower', { mode: Thermostat.SetpointRaiseLowerMode.Both, amount: 100 });
-        if (device.deviceName === 'Thermostat (AutoMode)') {
-          await device.setAttribute(ThermostatCluster.id, 'systemMode', Thermostat.SystemMode.Off);
-          await device.setAttribute(ThermostatCluster.id, 'systemMode', Thermostat.SystemMode.Heat);
-          await device.setAttribute(ThermostatCluster.id, 'systemMode', Thermostat.SystemMode.Cool);
-        }
-        if (device.deviceName === 'Thermostat (AutoMode)' || device.deviceName === 'Thermostat (Heat)') {
-          await device.setAttribute(ThermostatCluster.id, 'systemMode', Thermostat.SystemMode.Off);
-          await device.setAttribute(ThermostatCluster.id, 'systemMode', Thermostat.SystemMode.Heat);
-          await device.setAttribute(ThermostatCluster.id, 'occupiedHeatingSetpoint', 2800);
-          await device.setAttribute(ThermostatCluster.id, 'occupiedHeatingSetpoint', 2700);
-        }
-        if (device.deviceName === 'Thermostat (AutoMode)' || device.deviceName === 'Thermostat (Cool)') {
-          await device.setAttribute(ThermostatCluster.id, 'systemMode', Thermostat.SystemMode.Off);
-          await device.setAttribute(ThermostatCluster.id, 'systemMode', Thermostat.SystemMode.Cool);
-          await device.setAttribute(ThermostatCluster.id, 'occupiedCoolingSetpoint', 1500);
-          await device.setAttribute(ThermostatCluster.id, 'occupiedCoolingSetpoint', 1400);
-        }
-      }
-    }
   });
 
   it('should call onConfigure', async () => {
@@ -337,9 +270,9 @@ describe('TestPlatform', () => {
 
     jest.useRealTimers();
 
-    expect(mockLog.info).toHaveBeenCalledTimes(2);
+    expect(mockLog.info).toHaveBeenCalledTimes(3);
     expect(mockLog.error).toHaveBeenCalledTimes(0);
-    expect(loggerLogSpy).toHaveBeenCalledTimes(1369);
+    expect(loggerLogSpy).toHaveBeenCalledTimes(0);
   }, 60000);
 
   it('should call onShutdown with reason', async () => {

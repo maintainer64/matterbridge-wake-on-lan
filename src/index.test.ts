@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Matterbridge, MatterbridgeEndpoint, PlatformConfig } from 'matterbridge';
 import { AnsiLogger } from 'matterbridge/logger';
-import { ExampleMatterbridgeDynamicPlatform } from './platform.js';
+import { MatterbridgeWakOnLan } from './platform.js';
 import initializePlugin from './index';
 import { jest } from '@jest/globals';
 
@@ -56,11 +56,11 @@ describe('initializePlugin', () => {
   } as unknown as Matterbridge;
 
   const mockConfig = {
-    name: 'matterbridge-example-dynamic-platform',
+    name: 'matterbridge-wake-on-lan',
     type: 'DynamicPlatform',
     whiteList: [],
     blackList: [],
-    useInterval: true,
+    wakeOnLan: [],
     enableConcentrationMeasurements: true,
     debug: true,
     unregisterOnShutdown: false,
@@ -68,7 +68,7 @@ describe('initializePlugin', () => {
 
   it('should return an instance of TestPlatform', async () => {
     const result = initializePlugin(mockMatterbridge, mockLog, mockConfig);
-    expect(result).toBeInstanceOf(ExampleMatterbridgeDynamicPlatform);
+    expect(result).toBeInstanceOf(MatterbridgeWakOnLan);
     await result.onShutdown();
   });
 });

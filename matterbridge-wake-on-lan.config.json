@@ -1,10 +1,10 @@
 {
-  "name": "matterbridge-example-dynamic-platform",
+  "name": "matterbridge-wake-on-lan",
   "type": "DynamicPlatform",
   "version": "1.1.7",
   "whiteList": [],
   "blackList": [],
-  "useInterval": true,
+  "wakeOnLan": [],
   "debug": true,
   "unregisterOnShutdown": false
 }
